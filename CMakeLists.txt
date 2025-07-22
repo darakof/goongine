@@ -122,19 +122,10 @@ endif()
 #-------------------------------------------------------------------------------
 # 6. ADVANCED RUN TARGETS WITH FULL CONFIGURATION
 #-------------------------------------------------------------------------------
-# Main run target with full configurability
+# Main run target
 add_custom_target(run
-    COMMAND ${CMAKE_COMMAND} -E echo "Running with full libdecor configuration..."
-    COMMAND ${CMAKE_COMMAND} -E echo "-----------------------------------------"
-    COMMAND ${CMAKE_COMMAND} -E echo "Usage: make run [LIBNAME=...] [PLUGIN_DIR=...] [PLUGIN=...]"
-    COMMAND ${CMAKE_COMMAND} -E echo "Defaults:"
-    COMMAND ${CMAKE_COMMAND} -E echo "  LIBNAME=${DEFAULT_LIBDECOR_NAME}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  PLUGIN_DIR=${DEFAULT_PLUGIN_DIR}"
-    COMMAND ${CMAKE_COMMAND} -E echo "  PLUGIN=${DEFAULT_PLUGIN_NAME}"
-    COMMAND ${CMAKE_COMMAND} -E echo "-----------------------------------------"
-    COMMAND env XDG_SESSION_TYPE=wayland LD_LIBRARY_PATH="${DEFAULT_PLUGIN_DIR}:$ENV{LD_LIBRARY_PATH}" LIBDECOR_PLUGIN_DIR="${PLUGIN_DIR}" LIBDECOR_BACKEND="${PLUGIN}" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/main
+    COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/main
     DEPENDS main
-    COMMENT "Running with configurable libdecor settings"
 )
 
 # Run with specific plugin
