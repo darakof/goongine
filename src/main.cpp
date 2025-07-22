@@ -2,10 +2,6 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-// screen proportions like the default 16:9
-int proportionsX = 16;
-int proportionsY = 9;
-
 // callback function to make the window's darawable size be the size of the actual window
 void window_size_callback(GLFWwindow* window, int width, int height) {
     printf("window resized, new size: width %d, height %d\n", width, height);
