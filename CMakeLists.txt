@@ -80,7 +80,8 @@ pkg_check_modules(WAYLAND REQUIRED
 # 5. EXECUTABLE TARGET SETUP
 #-------------------------------------------------------------------------------
 # Gather source files
-file(GLOB_RECURSE SOURCES "src/*.cpp")
+# Automatically gather all .cpp files recursively from src and any subfolders
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 
 # Create main executable
 add_executable(main ${SOURCES})

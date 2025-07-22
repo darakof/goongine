@@ -1,3 +1,2 @@
 darakof:
-// opengl renderer (src/renderer)
-cmake list (CMakeLists.txt)
+opengl renderer (src/renderer)
