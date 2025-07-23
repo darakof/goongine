@@ -10,8 +10,6 @@ mkdir -p lib
 cp ./build/src/libglfw3.a ./lib/libglfw3.a
 cp -r ./include ./lib/include
 
-cd ../glew
-make SYSTEM=linux-clang GLEW_DEST=./lib glew.lib.static
-cp -r ./include ./lib/include
+
 
 echo finished compiling

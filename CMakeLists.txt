@@ -45,9 +45,9 @@ file(MAKE_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 # Find essential graphics libraries
 find_package(OpenGL REQUIRED)
 
-set(GLEW_ROOT "${CMAKE_SOURCE_DIR}/libs/glew")
-set(GLEW_INCLUDE_DIR "${GLEW_ROOT}/lib/include")
-set(GLEW_LIBRARY "${GLEW_ROOT}/lib/libGLEW.a")
+set(GLAD_ROOT "${CMAKE_SOURCE_DIR}/libs/glad/lib")
+set(GLAD_INCLUDE_DIR "${GLAD_ROOT}/include")
+set(GLAD_SOURCE "${GLAD_ROOT}/src")
 
 set(GLFW_ROOT "${CMAKE_SOURCE_DIR}/libs/glfw")
 set(GLFW_INCLUDE_DIR "${GLFW_ROOT}/lib/include")
@@ -73,14 +73,14 @@ pkg_check_modules(WAYLAND REQUIRED
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
 
 # Create main executable
-add_executable(main ${SOURCES})
+add_executable(main ${SOURCES} ${GLAD_SOURCE})
 
 # Configure include directories
 target_include_directories(main PRIVATE
     include
     ${OPENGL_INCLUDE_DIR}
-    ${GLEW_INCLUDE_DIR}
-    ${GLFW_INLUDE_DIR}
+    ${GLAD_INCLUDE_DIR}
+    ${GLFW_INCLUDE_DIR}
     ${LIBDECOR_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
 )
@@ -89,7 +89,6 @@ target_include_directories(main PRIVATE
 target_link_libraries(main
     glfw
     ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARY}
     ${GLFW_LIBRARY}
     ${LIBDECOR_LIBRARIES}
     ${WAYLAND_LIBRARIES}
@@ -179,7 +178,6 @@ add_custom_target(run-x11
 add_custom_target(check-deps
     COMMAND ${CMAKE_COMMAND} -E echo "Checking dependencies..."
     COMMAND pkg-config --exists glfw3 && echo "GLFW: installed" || echo "GLFW: missing (sudo apt install libglfw3-dev)"
-    COMMAND pkg-config --exists glew && echo "GLEW: installed" || echo "GLEW: missing (sudo apt install libglew-dev)"
     COMMAND pkg-config --exists libdecor-0 && echo "libdecor: installed" || echo "libdecor: missing (sudo apt install libdecor-0-dev)"
     COMMAND pkg-config --exists wayland-client && echo "Wayland: installed" || echo "Wayland: missing (sudo apt install libwayland-dev)"
     COMMAND bash -c '[ -d "${DEFAULT_PLUGIN_DIR}" ] && echo "Plugin directory exists" || echo "Plugin directory missing: ${DEFAULT_PLUGIN_DIR}" '

@@ -1,10 +1,51 @@
-#include <GL/glew.h>
+#include "../libs/glad/lib/include/glad/gl.h"
 #include <GLFW/glfw3.h>
+#include <iostream>
 #include <stdio.h>
+#include <string>
+#include <fstream>
+#include <sstream>
 #include <cstring>
 
 // we will read the command line and set this accordingly
 bool DEBUG_MODE = 0;
+
+char* readShaderFile(const char* fileName) {
+    FILE* file = fopen(fileName, "rb");  // Open in binary mode
+    if (!file) {
+        perror("Failed to open shader file");
+        return NULL;
+    }
+
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    long length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory (+1 for null terminator)
+    char* buffer = (char*)malloc(length + 1);
+    if (!buffer) {
+        fclose(file);
+        fprintf(stderr, "Memory allocation failed\n");
+        return NULL;
+    }
+
+    // Read file content
+    size_t bytes_read = fread(buffer, 1, length, file);
+    if (bytes_read != (size_t)length) {
+        fclose(file);
+        free(buffer);
+        fprintf(stderr, "Read error: expected %ld bytes, got %zu\n", length, bytes_read);
+        return NULL;
+    }
+
+    // Null-terminate the string
+    buffer[length] = '\0';
+    fclose(file);
+    return buffer;
+}
+
+
 
 // callback function to make the window's darawable size be the size of the actual window
 void window_size_callback(GLFWwindow* window, int width, int height) {
@@ -32,6 +73,10 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
     if (!window)
@@ -44,27 +89,41 @@ int main(int argc, char* argv[])
     glfwMakeContextCurrent(window);
     glfwSetWindowSizeCallback(window, window_size_callback);
 
-    GLenum err = glewInit();
-    if (err != GLEW_OK) {
-        fprintf(stderr, "GLEW intilization return error code %d\n", err);
-        fprintf(stderr,"GLEW failed to initialize, error: %s\n", glewGetErrorString(err));
-    }
-    if (DEBUG_MODE) {
-        printf("using GLEW version %s\n", glewGetString(GLEW_VERSION));
-    }
-    printf("OpenGL Version: %s\n", glGetString(GL_VERSION));
-
     float positions[6] = {
         -0.5f, -0.5f,
         0.0f, 0.5f,
         0.5f, -0.5f
     };
 
-    unsigned int buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    unsigned int VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, 6*sizeof(float), positions, GL_STATIC_DRAW);
 
+    const char *vertexShaderSource = readShaderFile("../assets/shaders/basic.vert");
+    unsigned int vertexShader;
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+
+    const char *fragmentShaderSource = readShaderFile("../assets/shaders/basic.frag");
+    unsigned int fragmentShader;
+    fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+
+    unsigned int shaderProgram;
+    shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glUseProgram(shaderProgram);
+
+    glBindVertexArray(VBO);
+
+    glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,2*sizeof(float),(void*)0);
+    glEnableVertexAttribArray(0);
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -81,6 +140,8 @@ int main(int argc, char* argv[])
         glfwPollEvents();
     }
 
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
     glfwTerminate();
     return 0;
 }
