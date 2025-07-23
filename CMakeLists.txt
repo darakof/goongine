@@ -27,24 +27,7 @@ set(CMAKE_CXX_FLAGS_PERFORMANCE    "-O3 -march=native -DNDEBUG")
 set(CMAKE_CXX_FLAGS_SIZE           "-Os -DNDEBUG")
 
 #-------------------------------------------------------------------------------
-# 2. LIBDECOR CONFIGURATION (CORE SETTINGS)
-#-------------------------------------------------------------------------------
-# These settings control how libdecor is used at runtime
-set(DEFAULT_LIBDECOR_NAME "libdecor-0" CACHE STRING 
-    "Default libdecor library name (e.g., libdecor-0, libdecor-custom)")
-set(DEFAULT_PLUGIN_DIR "/usr/lib/libdecor/plugins-1" CACHE PATH 
-    "Default directory containing libdecor plugins")
-set(DEFAULT_PLUGIN_NAME "basic" CACHE STRING 
-    "Default plugin to use (basic, gtk, etc.)")
-
-# Display configuration
-message(STATUS "Libdecor Configuration:")
-message(STATUS "  Library name: ${DEFAULT_LIBDECOR_NAME}")
-message(STATUS "  Plugin directory: ${DEFAULT_PLUGIN_DIR}")
-message(STATUS "  Default plugin: ${DEFAULT_PLUGIN_NAME}")
-
-#-------------------------------------------------------------------------------
-# 3. PROJECT STRUCTURE SETUP
+# 2. PROJECT STRUCTURE SETUP
 #-------------------------------------------------------------------------------
 # Configure output directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -57,12 +40,18 @@ file(MAKE_DIRECTORY ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 file(MAKE_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 #-------------------------------------------------------------------------------
-# 4. DEPENDENCY CONFIGURATION
+# 3. DEPENDENCY CONFIGURATION
 #-------------------------------------------------------------------------------
 # Find essential graphics libraries
 find_package(OpenGL REQUIRED)
-find_package(glfw3 REQUIRED)
-find_package(GLEW REQUIRED)
+
+set(GLEW_ROOT "${CMAKE_SOURCE_DIR}/libs/glew")
+set(GLEW_INCLUDE_DIR "${GLEW_ROOT}/lib/include")
+set(GLEW_LIBRARY "${GLEW_ROOT}/lib/libGLEW.a")
+
+set(GLFW_ROOT "${CMAKE_SOURCE_DIR}/libs/glfw")
+set(GLFW_INCLUDE_DIR "${GLFW_ROOT}/lib/include")
+set(GLFW_LIBRARY "${GLFW_ROOT}/lib/libglfw3.a")
 
 # Find libdecor using pkg-config
 find_package(PkgConfig REQUIRED)
@@ -77,7 +66,7 @@ pkg_check_modules(WAYLAND REQUIRED
 )
 
 #-------------------------------------------------------------------------------
-# 5. EXECUTABLE TARGET SETUP
+# 4. EXECUTABLE TARGET SETUP
 #-------------------------------------------------------------------------------
 # Gather source files
 # Automatically gather all .cpp files recursively from src and any subfolders
@@ -90,7 +79,8 @@ add_executable(main ${SOURCES})
 target_include_directories(main PRIVATE
     include
     ${OPENGL_INCLUDE_DIR}
-    ${GLEW_INCLUDE_DIRS}
+    ${GLEW_INCLUDE_DIR}
+    ${GLFW_INLUDE_DIR}
     ${LIBDECOR_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
 )
@@ -99,7 +89,8 @@ target_include_directories(main PRIVATE
 target_link_libraries(main
     glfw
     ${OPENGL_LIBRARIES}
-    GLEW::GLEW
+    ${GLEW_LIBRARY}
+    ${GLFW_LIBRARY}
     ${LIBDECOR_LIBRARIES}
     ${WAYLAND_LIBRARIES}
     dl
@@ -121,11 +112,17 @@ if(NOT WAYLAND_FOUND)
 endif()
 
 #-------------------------------------------------------------------------------
-# 6. ADVANCED RUN TARGETS WITH FULL CONFIGURATION
+# 5. ADVANCED RUN TARGETS WITH FULL CONFIGURATION
 #-------------------------------------------------------------------------------
 # Main run target
 add_custom_target(run
     COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/main
+    DEPENDS main
+)
+
+#run with debug statements
+add_custom_target(run-debug
+    COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/main -debug
     DEPENDS main
 )
 
@@ -176,7 +173,7 @@ add_custom_target(run-x11
 )
 
 #-------------------------------------------------------------------------------
-# 7. UTILITY TARGETS
+# 6. UTILITY TARGETS
 #-------------------------------------------------------------------------------
 # Dependency check
 add_custom_target(check-deps
@@ -185,8 +182,8 @@ add_custom_target(check-deps
     COMMAND pkg-config --exists glew && echo "GLEW: installed" || echo "GLEW: missing (sudo apt install libglew-dev)"
     COMMAND pkg-config --exists libdecor-0 && echo "libdecor: installed" || echo "libdecor: missing (sudo apt install libdecor-0-dev)"
     COMMAND pkg-config --exists wayland-client && echo "Wayland: installed" || echo "Wayland: missing (sudo apt install libwayland-dev)"
-    COMMAND bash -c '[ -d "${DEFAULT_PLUGIN_DIR}" ] && echo "Plugin directory exists" || echo "Plugin directory missing: ${DEFAULT_PLUGIN_DIR}"'
-    COMMAND bash -c 'ls "${DEFAULT_PLUGIN_DIR}" 2>/dev/null | grep libdecor- || echo "No plugins found in ${DEFAULT_PLUGIN_DIR}"'
+    COMMAND bash -c '[ -d "${DEFAULT_PLUGIN_DIR}" ] && echo "Plugin directory exists" || echo "Plugin directory missing: ${DEFAULT_PLUGIN_DIR}" '
+    COMMAND bash -c 'ls "${DEFAULT_PLUGIN_DIR}" 2>/dev/null | grep libdecor- || echo "No plugins found in ${DEFAULT_PLUGIN_DIR}" '
     COMMENT "Checking system dependencies"
 )
 
@@ -209,28 +206,9 @@ add_custom_target(config-info
 )
 
 #-------------------------------------------------------------------------------
-# 8. RUNTIME CONFIGURATION GUIDE
+# 7. RUNTIME CONFIGURATION GUIDE
 #-------------------------------------------------------------------------------
 # Display runtime configuration info
-message("\nLibdecor Runtime Configuration Guide:")
-message("================================================================")
-message("You have full control over libdecor at runtime:")
-message("")
-message("1. Library Selection:")
-message("   - Controls which libdecor implementation to use")
-message("   - Set with: make run LIBNAME=custom-libname")
-message("   - Default: ${DEFAULT_LIBDECOR_NAME}")
-message("")
-message("2. Plugin Directory:")
-message("   - Sets where to look for decoration plugins")
-message("   - Set with: make run PLUGIN_DIR=/custom/plugin/path")
-message("   - Default: ${DEFAULT_PLUGIN_DIR}")
-message("")
-message("3. Plugin Selection:")
-message("   - Chooses which decoration plugin to use")
-message("   - Set with: make run PLUGIN=plugin-name")
-message("   - Default: ${DEFAULT_PLUGIN_NAME}")
-message("")
 message("Predefined Targets:")
 message("  run             : Full configuration (set all options)")
 message("  run-with-plugin : Configure plugin and plugin directory")
@@ -249,7 +227,7 @@ message("Check dependencies: make check-deps")
 message("================================================================")
 
 #-------------------------------------------------------------------------------
-# 9. BUILD TYPE DOCUMENTATION
+# 8. BUILD TYPE DOCUMENTATION
 #-------------------------------------------------------------------------------
 # Help section explaining build types
 message("\nBuild Type Options:")
