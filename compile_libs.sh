@@ -2,7 +2,7 @@
 
 cd ./libs/glfw
 mkdir -p build
-cmake -S . -B build -D GLFW_BUILD_X11=1 -D GLFW_BUILD_WAYLAND=1
+cmake -S . -B build -D GLFW_BUILD_WAYLAND=ON
 cd build
 make
 cd ..

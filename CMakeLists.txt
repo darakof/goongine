@@ -1,6 +1,6 @@
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.10)
-project(MyProject LANGUAGES CXX)
+project(MyProject LANGUAGES C CXX)
 
 #-------------------------------------------------------------------------------
 # 1. BUILD CONFIGURATION SETUP
@@ -45,9 +45,24 @@ file(MAKE_DIRECTORY ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 # Find essential graphics libraries
 find_package(OpenGL REQUIRED)
 
-set(GLAD_ROOT "${CMAKE_SOURCE_DIR}/libs/glad/lib")
-set(GLAD_INCLUDE_DIR "${GLAD_ROOT}/include")
-set(GLAD_SOURCE "${GLAD_ROOT}/src")
+find_path(EGL_INCLUDE_DIR EGL/egl.h
+    PATHS /usr/include /usr/local/include
+)
+
+find_library(EGL_LIBRARY
+    NAMES EGL egl
+    PATHS /usr/lib /usr/lib64 /usr/local/lib
+)
+
+if(EGL_INCLUDE_DIR AND EGL_LIBRARY)
+    set(EGL_FOUND TRUE)
+    set(EGL_INCLUDE_DIRS ${EGL_INCLUDE_DIR})
+    set(EGL_LIBRARIES ${EGL_LIBRARY})
+else()
+    message(FATAL_ERROR "EGL not found. Install libegl-dev or similar package")
+endif()
+
+add_library(glew STATIC ${CMAKE_SOURCE_DIR}/src/GL/glew.c)
 
 set(GLFW_ROOT "${CMAKE_SOURCE_DIR}/libs/glfw")
 set(GLFW_INCLUDE_DIR "${GLFW_ROOT}/lib/include")
@@ -70,16 +85,22 @@ pkg_check_modules(WAYLAND REQUIRED
 #-------------------------------------------------------------------------------
 # Gather source files
 # Automatically gather all .cpp files recursively from src and any subfolders
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_SOURCE_DIR}/src/*.cpp" )
 
 # Create main executable
 add_executable(main ${SOURCES} ${GLAD_SOURCE})
 
+target_compile_definitions(main PRIVATE
+    GLEW_STATIC
+    GLEW_NO_GLX
+    GLEW_EGL
+)
+
 # Configure include directories
 target_include_directories(main PRIVATE
     include
+    ${EGL_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
-    ${GLAD_INCLUDE_DIR}
     ${GLFW_INCLUDE_DIR}
     ${LIBDECOR_INCLUDE_DIRS}
     ${WAYLAND_INCLUDE_DIRS}
@@ -88,6 +109,8 @@ target_include_directories(main PRIVATE
 # Link libraries
 target_link_libraries(main
     glfw
+    glew
+    ${EGL_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLFW_LIBRARY}
     ${LIBDECOR_LIBRARIES}
