@@ -1,4 +1,5 @@
 #include "engine/engine_main.hpp"
+#include "engine/engine_variable_definitions.hpp"
 
 #include <iostream>
 #include <stdio.h>
@@ -192,4 +193,8 @@ int Engine::engine_main(int argc, char* argv[])
     glDeleteShader(fragmentShader);
     glfwTerminate();
     return 0;
+}
+
+bool Engine::getDebugMode() {
+    return Engine::DEBUG_MODE;
 }
