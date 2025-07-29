@@ -1,5 +1,5 @@
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include "engine/engine_main.hpp"
+
 #include <iostream>
 #include <stdio.h>
 #include <string>
@@ -7,10 +7,7 @@
 #include <sstream>
 #include <cstring>
 
-// we will read the command line and set this accordingly
-bool DEBUG_MODE = 0;
-
-char* readShaderFile(const char* fileName) {
+char* Engine::readShaderFile(const char* fileName) {
     FILE* file = fopen(fileName, "rb");  // Open in binary mode
     if (!file) {
         perror("Failed to open shader file");
@@ -48,22 +45,22 @@ char* readShaderFile(const char* fileName) {
 
 
 // callback function to make the window's darawable size be the size of the actual window
-void window_size_callback(GLFWwindow* window, int width, int height) {
-    if (DEBUG_MODE) {
+void Engine::window_size_callback(GLFWwindow* window, int width, int height) {
+    if (Engine::DEBUG_MODE) {
         printf("window resized, new size: width %d, height %d\n", width, height);
     }
     glViewport(0,0,width,height);
 }
 
 // get command line arguments where argc is the ammount and argv is the strings that are the argument (argv[1] is always the executable)
-int main(int argc, char* argv[])
+int Engine::engine_main(int argc, char* argv[])
 {
     for (int i = 1; i < argc; i++) {
         if (argc < 2) {
             break;
         }
         if (strcmp(argv[i], "-debug") == 0) {
-            DEBUG_MODE = true;
+            Engine::DEBUG_MODE = true;
         }
     }
 
@@ -99,10 +96,16 @@ int main(int argc, char* argv[])
     int backend = glfwGetPlatform();
     printf("GLFW backend: %x\n", backend);
 
-    float positions[6] = {
+    float vertices[8] = {
+         0.5f,  0.5f,
+         0.5f, -0.5f,
         -0.5f, -0.5f,
-        0.0f, 0.5f,
-        0.5f, -0.5f
+        -0.5f,  0.5f
+    };
+
+    unsigned int indices[6] = {
+        0, 1, 3,
+        1, 2, 3
     };
 
     unsigned int VAO;
@@ -112,7 +115,13 @@ int main(int argc, char* argv[])
     unsigned int VBO;
     glGenBuffers(1, &VBO);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, 6*sizeof(float), positions, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0,2,GL_FLOAT,GL_FALSE,2*sizeof(float),(void*)0);
     glEnableVertexAttribArray(0);
@@ -125,11 +134,29 @@ int main(int argc, char* argv[])
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
     glCompileShader(vertexShader);
 
+    int  success;
+    char infoLog[512];
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+
+    if(!success)
+    {
+        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+        std::cout << "Error compiling vertex shader" << infoLog << std::endl;
+    }
+
     const char *fragmentShaderSource = readShaderFile("../assets/shaders/basic.frag");
     unsigned int fragmentShader;
     fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
     glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+
+    if(!success)
+    {
+        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+        std::cout << "Error compiling fragment shader: " << infoLog << std::endl;
+    }
 
     unsigned int shaderProgram;
     shaderProgram = glCreateProgram();
@@ -149,7 +176,7 @@ int main(int argc, char* argv[])
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
         /* Swap front and back buffers */
         glfwSwapBuffers(window);
