@@ -5,6 +5,7 @@
 #endif
 
 #include "GL/glew.h"
+#include <glm/gtc/type_ptr.hpp>
 
 #include <stdio.h>
 
@@ -70,6 +71,10 @@ namespace Renderer {
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value); 
     }
 
+    void ShaderProgram::setMat4(const std::string &name, glm::mat4 value) const {
+        int mat4Loc = glGetUniformLocation(ID, name.c_str());
+        glUniformMatrix4fv(mat4Loc, 1, GL_FALSE, glm::value_ptr(value));
+    }
 
     char* ShaderProgram::readShaderFile(const char* fileName) {
         FILE* file = fopen(fileName, "rb");
